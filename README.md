@@ -63,3 +63,29 @@ Upon running the script, you will be presented with a menu of options:
 运行text1.py,索引过程将自动进行。如果索引不存在，将为business和review索引（`indexdir` 和 `review_indexdir`）创建目录并构建索引，否则读取已有的索引文件。
 - The script commits the indexed data every 10% to ensure that progress is saved and can be monitored.该脚本每 10% 提交一次索引数据。
 
+### Other function(TOBEUPDATE)
+#### 1. `count_user_reviews(review_df)`
+统计用户评论数量。
+
+- **参数**:
+  - `review_df (DataFrame)`: 包含评论数据的数据帧。
+- **返回**:
+  - `Series`: 用户评论数量统计。
+
+#### 2. `calculate_bounding_box(user_reviews)`
+计算用户评论的经纬度边界框。
+
+- **参数**:
+  - `user_reviews (DataFrame)`: 包含用户评论数据的数据帧。
+- **返回**:
+  - `tuple`: 边界框坐标，格式为 `(min_latitude, max_latitude, min_longitude, max_longitude)`。
+
+#### 3. `top_n_words(reviews, n=10)`
+获取评论中最常见的 n 个词。
+
+- **参数**:
+  - `reviews (list)`: 评论文本列表。
+  - `n (int)`: 最常见词的数量，默认为 10。
+- **返回**:
+  - `list`: 最常见词及其频率的列表。
+
