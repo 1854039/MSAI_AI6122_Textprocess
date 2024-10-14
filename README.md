@@ -59,7 +59,7 @@ Upon running the script, you will be presented with a menu of options:
 
 ### Indexing 索引
 
-The indexing process will occur automatically when you run the script. The script will create directories for business and review indexes (`indexdir` and `review_indexdir`) if they do not exist.  
+- The indexing process will occur automatically when you run the script. The script will create directories for business and review indexes (`indexdir` and `review_indexdir`) if they do not exist.  
 运行text1.py,索引过程将自动进行。如果索引不存在，将为business和review索引（`indexdir` 和 `review_indexdir`）创建目录并构建索引，否则读取已有的索引文件。
-The script commits the indexed data every 10% to ensure that progress is saved and can be monitored.该脚本每 10% 提交一次索引数据。
+- The script commits the indexed data every 10% to ensure that progress is saved and can be monitored.该脚本每 10% 提交一次索引数据。
 
