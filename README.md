@@ -1,5 +1,3 @@
-# MSAI_AI6122_Textprocess
-
 # Business Review Search Engine
 
 ## Overview
@@ -26,8 +24,8 @@ You can install the required packages using:
 
 ```bash
 pip install -r requirements.txt
-
-## Usage 用法
+```
+## Usage
 
 Upon running the script, you will be presented with a menu of options:  
 运行脚本后，您将看到一个选项菜单：
