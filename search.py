@@ -4,147 +4,160 @@ import nltk
 from whoosh.qparser import QueryParser
 from create_index import preprocess_text
 
+# Download stopwords for text preprocessing
 nltk.download('stopwords')
-# 定义索引结构
+
+# Import necessary libraries
 import os
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
 from whoosh.index import create_in, open_dir
 
+# Define index directories
 BUSINESS_INDEX_DIR = "indexdir"
 REVIEW_INDEX_DIR = "review_indexdir"
 
-# 打开索引
+# Open the business and review indices
 ix = open_dir(BUSINESS_INDEX_DIR)
 review_ix = open_dir(REVIEW_INDEX_DIR)
 
 def search_business(query_str, top_n, sort_by='stars'):
     """
-    根据关键词搜索商家。
+    Search for businesses based on keywords.
 
-    参数:
-        query_str (str): 搜索关键词。
-        top_n (int): 返回的结果数量。
-        sort_by (str): 排序方式，可以是'stars'或'name'。
+    Parameters:
+        query_str (str): The search keywords.
+        top_n (int): The number of results to return.
+        sort_by (str): The sorting method, can be 'stars' or 'name'.
 
-    返回:
-        list: 包含搜索结果的列表。
+    Returns:
+        list: A list of search results.
     """
-    query_str = preprocess_text(query_str)
-    start_time = time.time()  # 开始计时
+    query_str = preprocess_text(query_str)  # Preprocess the query
+    start_time = time.time()  # Start timing
     with ix.searcher() as searcher:
-        query = QueryParser("name", ix.schema).parse(query_str)
+        query = QueryParser("name", ix.schema).parse(query_str)  # Parse the query
 
-        results = searcher.search(query,limit=None,sortedby=sort_by)
-        # 收集结果
+        # Perform the search
+        results = searcher.search(query, limit=None, sortedby=sort_by)
+
+        # Collect results
         businesses = [(result['business_id'], result['name'], result['stars']) for result in results]
 
-        # 根据指定的排序方式排序
+        # Sort results based on the specified method
         if sort_by == 'stars':
-            businesses.sort(key=lambda x: x[2], reverse=True)  # 按星级降序
+            businesses.sort(key=lambda x: x[2], reverse=True)  # Sort by stars in descending order
         elif sort_by == 'name':
-            businesses.sort(key=lambda x: x[1])  # 按名称升序
+            businesses.sort(key=lambda x: x[1])  # Sort by name in ascending order
 
-    elapsed_time = time.time() - start_time  # 结束计时
-    total_results = len(businesses)  # 获取总结果数量
+    elapsed_time = time.time() - start_time  # End timing
+    total_results = len(businesses)  # Get total number of results
     print(f"Search Businesses executed in {elapsed_time:.4f} seconds. Found {total_results} results.")
 
-    # 返回前N个结果
+    # Return the top N results or all if requested exceeds available
     if top_n > total_results:
         print(f"Requested top_n ({top_n}) exceeds available results. Returning all {total_results} results.")
-        return businesses  # 如果请求的数量超过可用结果，返回所有结果
+        return businesses  # Return all results
     else:
-        return businesses[:top_n]  # 返回前N个结果
+        return businesses[:top_n]  # Return top N results
 
 
 def search_reviews(query_str, top_n=10, sort_by='useful'):
     """
-    根据关键词搜索评论。
+    Search for reviews based on keywords.
 
-    参数:
-        query_str (str): 搜索关键词。
-        top_n (int): 返回的结果数量，默认为10。
-        sort_by (str): 排序方式，可以是'useful'或'time'。
+    Parameters:
+        query_str (str): The search keywords.
+        top_n (int): The number of results to return (default is 10).
+        sort_by (str): The sorting method, can be 'useful' or 'date'.
 
-    返回:
-        list: 包含搜索结果的列表。
+    Returns:
+        list: A list of search results.
     """
-    query_str = preprocess_text(query_str)
+    query_str = preprocess_text(query_str)  # Preprocess the query
 
-    start_time = time.time()  # 开始计时
+    start_time = time.time()  # Start timing
     with review_ix.searcher() as searcher:
-        query = QueryParser("text", review_ix.schema).parse(query_str)
-        print(query)
-        results = searcher.search(query, limit=None,sortedby=sort_by)
-        print(results)
+        query = QueryParser("text", review_ix.schema).parse(query_str)  # Parse the query
+        results = searcher.search(query, limit=None, sortedby=sort_by)  # Perform the search
 
-        # 收集结果
+        # Collect results
         reviews = [
             (result['review_id'], result['text'], result['stars'], result['useful'], result['date'])
             for result in results
         ]
 
-        # 根据排序方式进行排序
+        # Sort results based on the specified method
         if sort_by == 'date':
-            reviews.sort(key=lambda x: datetime.strptime(x[4], "%Y-%m-%d %H:%M:%S"), reverse=True)  # 按时间降序
+            reviews.sort(key=lambda x: datetime.strptime(x[4], "%Y-%m-%d %H:%M:%S"), reverse=True)  # Sort by date in descending order
         elif sort_by == 'useful':
-            reviews.sort(key=lambda x: x[3], reverse=True)  # 按'有用'数降序
+            reviews.sort(key=lambda x: x[3], reverse=True)  # Sort by useful count in descending order
 
-    elapsed_time = time.time() - start_time  # 结束计时
+    elapsed_time = time.time() - start_time  # End timing
     print(f"Search Reviews executed in {elapsed_time:.4f} seconds.")
-    return reviews[:top_n]  # 返回前N个结果
+    return reviews[:top_n]  # Return top N results
 
 
 def search_geospatial(lat_min, lat_max, lon_min, lon_max, top_n=10, sort_by='stars'):
     """
-    执行地理空间搜索。
+    Perform geospatial search based on latitude and longitude.
 
-    返回:
-        list: 包含搜索结果的列表。
+    Parameters:
+        lat_min (float): Minimum latitude.
+        lat_max (float): Maximum latitude.
+        lon_min (float): Minimum longitude.
+        lon_max (float): Maximum longitude.
+        top_n (int): The number of results to return (default is 10).
+        sort_by (str): The sorting method, can be 'stars' or 'name'.
+
+    Returns:
+        list: A list of search results.
     """
-    start_time = time.time()  # 开始计时
+    start_time = time.time()  # Start timing
     results = []
-    epsilon = 1e-7  # 设定容忍度
+    epsilon = 1e-7  # Tolerance for latitude and longitude comparisons
     with ix.searcher() as searcher:
+        # Iterate over all documents in the index
         for hit in searcher.documents():
             lat = float(hit['latitude'])
             lon = float(hit['longitude'])
 
+            # Check if the document's latitude and longitude fall within the specified range
             if (lat_min - epsilon <= lat <= lat_max + epsilon) and (
                     lon_min - epsilon <= lon <= lon_max + epsilon):
                 results.append((hit['business_id'], hit['name'], lat, lon, hit['stars']))
 
-    # 根据指定的排序方式排序
+    # Sort results based on the specified method
     if sort_by == 'stars':
-        results.sort(key=lambda x: x[4], reverse=True)  # 按星级降序
+        results.sort(key=lambda x: x[4], reverse=True)  # Sort by stars in descending order
     elif sort_by == 'name':
-        results.sort(key=lambda x: x[1])  # 按名称升序
+        results.sort(key=lambda x: x[1])  # Sort by name in ascending order
 
-    elapsed_time = time.time() - start_time  # 结束计时
+    elapsed_time = time.time() - start_time  # End timing
     print(f"Search Geospatial executed in {elapsed_time:.4f} seconds.")
 
-    # 可视化查询结果
+    # Visualize search results
     plt.figure(figsize=(10, 6))
 
-    # 绘制所有结果的经纬度
+    # Plot all results' latitude and longitude
     all_lats = [result[2] for result in results]
     all_lons = [result[3] for result in results]
 
-    # 用蓝色点标注所有结果
+    # Plot all results in blue
     plt.scatter(all_lons, all_lats, color='blue', label='All Results', alpha=0.5)
 
-    # 只绘制前 N 个结果，用红色点标注
+    # Plot only the top N results in red
     if results:
         top_lats = [result[2] for result in results[:top_n]]
         top_lons = [result[3] for result in results[:top_n]]
         plt.scatter(top_lons, top_lats, color='red', label='Top N Results', alpha=0.7)
 
-    # 绘制查询范围的方框
+    # Draw a rectangle for the search area
     plt.gca().add_patch(plt.Rectangle((lon_min, lat_min), lon_max - lon_min, lat_max - lat_min,
                                         fill=None, edgecolor='blue', linewidth=2, label='Search Area'))
 
-    # 设置图形属性
+    # Set graph properties
     plt.xlim(-113.7313182, -113.2574946)
     plt.ylim(53.3526529, 53.6791969)
     plt.xlabel('Longitude')
@@ -154,9 +167,15 @@ def search_geospatial(lat_min, lat_max, lon_min, lon_max, top_n=10, sort_by='sta
     plt.grid()
     plt.show()
 
-    return results[:top_n]  # 返回前N个结果
+    return results[:top_n]  # Return top N results
 
 def main(args):
+    """
+    Main function to execute search commands based on user input.
+
+    Parameters:
+        args: Command line arguments parsed by argparse.
+    """
     if args.command == 'search_business':
         results = search_business(args.query, args.top_n, args.sort_by)
         for res in results:
@@ -198,5 +217,5 @@ if __name__ == "__main__":
     search_geospatial_parser.add_argument("--top_n", type=int, default=10, help="Number of results to return (default: 10)")
     search_geospatial_parser.add_argument("--sort_by", type=str, choices=['stars', 'name'], default='stars', help="Sort results by (default: stars)")
 
-    args = parser.parse_args()
-    main(args)
+    args = parser.parse_args()  # Parse command line arguments
+    main(args)  # Execute main function

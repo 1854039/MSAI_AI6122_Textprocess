@@ -52,13 +52,14 @@ def create_business_index():
 
 
 # Index business data function
+# Index business data function
 def index_businesses(ix, business_df):
     writer = ix.writer()
     total_count = len(business_df)
-    start_time = time.time()
     business_times = []  # List to capture indexing times
+    start_time = time.time()
+
     for index, row in business_df.iterrows():
-        index_start_time = time.time()
         writer.add_document(
             business_id=row["business_id"] if pd.notna(row["business_id"]) else '',
             name=preprocess_text(row["name"]),
@@ -75,16 +76,45 @@ def index_businesses(ix, business_df):
             categories=preprocess_text(row["categories"]),
             hours=str(row["hours"]) if pd.notna(row["hours"]) else '{}',
         )
-        index_elapsed_time = time.time() - index_start_time
-        business_times.append((index + 1, index_elapsed_time))  # Capture time for each document
 
+        # Record time every 10%
         if (index + 1) % (total_count // 10) == 0:
             elapsed_time = time.time() - start_time
-            print(f"Indexed {index + 1} of {total_count} business documents. Time taken: {elapsed_time:.2f} seconds.")
+            business_times.append((index + 1, elapsed_time))  # Capture time for each 10%
+
     writer.commit()
     print("Businesses indexed successfully!")
     return business_times  # Return the list of times
 
+
+# Index review data function
+def index_reviews(review_ix, review_df):
+    writer = review_ix.writer()
+    total_count = len(review_df)
+    review_times = []  # List to capture indexing times
+    start_time = time.time()
+
+    for index, row in review_df.iterrows():
+        writer.add_document(
+            review_id=row['review_id'],
+            user_id=row['user_id'],
+            business_id=row['business_id'],
+            stars=row['stars'],
+            useful=row['useful'],
+            funny=row['funny'],
+            cool=row['cool'],
+            text=preprocess_text(row['text']),
+            date=row['date']
+        )
+
+        # Record time every 10%
+        if (index + 1) % (total_count // 10) == 0:
+            elapsed_time = time.time() - start_time
+            review_times.append((index + 1, elapsed_time))  # Capture time for each 10%
+
+    writer.commit()
+    print("Reviews indexed successfully!")
+    return review_times  # Return the list of times
 
 # Define the schema for the review index
 review_schema = Schema(
@@ -112,15 +142,14 @@ def create_review_index():
         print("Review index opened successfully!")
         return review_ix
 
-
 # Index review data function
 def index_reviews(review_ix, review_df):
     writer = review_ix.writer()
     total_count = len(review_df)
-    start_time = time.time()
     review_times = []  # List to capture indexing times
+    start_time = time.time()
+
     for index, row in review_df.iterrows():
-        index_start_time = time.time()
         writer.add_document(
             review_id=row['review_id'],
             user_id=row['user_id'],
@@ -132,12 +161,12 @@ def index_reviews(review_ix, review_df):
             text=preprocess_text(row['text']),
             date=row['date']
         )
-        index_elapsed_time = time.time() - index_start_time
-        review_times.append((index + 1, index_elapsed_time))  # Capture time for each document
 
-        if (index + 1) % max(1, total_count // 10) == 0:
+        # Record time every 10%
+        if (index + 1) % (total_count // 10) == 0:
             elapsed_time = time.time() - start_time
-            print(f"Indexed {index + 1} of {total_count} review documents. Time taken: {elapsed_time:.2f} seconds.")
+            review_times.append((index + 1, elapsed_time))  # Capture time for each 10%
+
     writer.commit()
     print("Reviews indexed successfully!")
     return review_times  # Return the list of times
@@ -149,10 +178,12 @@ def merge_times(business_times, review_times):
     business_docs, business_elapsed = zip(*business_times) if business_times else ([], [])
     review_docs, review_elapsed = zip(*review_times) if review_times else ([], [])
     all_docs = sorted(set(business_docs).union(review_docs))
+
     for doc in all_docs:
         business_time = business_elapsed[business_docs.index(doc)] if doc in business_docs else None
         review_time = review_elapsed[review_docs.index(doc)] if doc in review_docs else None
         merged_times.append((doc, business_time, review_time))
+
     return merged_times
 
 
